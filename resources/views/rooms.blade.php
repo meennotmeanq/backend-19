@@ -95,7 +95,13 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        const overviewMaxDateForUser = "{{ now()->addDays(365)->toDateString() }}";
+        @php
+            $setting = \App\Models\BookingSetting::first();
+            $maxDays = $setting && $setting->max_advance_days !== null ? (int) $setting->max_advance_days : 14;
+            $maxDays = max(0, $maxDays);
+            $maxBookingDate = \Carbon\Carbon::today()->addDays($maxDays)->toDateString();
+        @endphp
+        const overviewMaxDateForUser = "{{ $maxBookingDate }}";
 
         let overviewDates = ["{{ now()->toDateString() }}"];
         let overviewSlots = new Set();

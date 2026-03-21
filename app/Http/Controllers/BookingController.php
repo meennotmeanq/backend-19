@@ -22,7 +22,7 @@ class BookingController extends Controller
             $maxDays = 0;
         }
         $maxDate = Carbon::today()->addDays($maxDays)->toDateString();
-        $limitRule = ($userRole === 'admin' || $userRole === 'staff') ? null : 'before_or_equal:' . $maxDate;
+        $limitRule = 'before_or_equal:' . $maxDate;
 
         $bookingType = $request->input('booking_type', 'single');
 
