@@ -61,6 +61,7 @@
                             @endif
                             @if (auth()->user()->role === 'admin')
                                 <a href="{{ route('admin_staff_index') }}" class="nav-link">จัดการบุคลากร</a>
+                                <a href="{{ route('admin_dashboard') }}" class="nav-link">รายงาน</a>
                             @endif
                             <li class="nav-item dropdown">
                                 <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"

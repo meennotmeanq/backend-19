@@ -15,34 +15,45 @@
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th>วันที่จอง</th>
+                                    <th>รหัสการจอง</th>
                                     <th>ชื่อห้อง</th>
-                                    <th>เวลา</th>
+                                    <th>วันที่และเวลา</th>
                                     <th>สถานะ</th>
                                     <th>จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($bookings as $booking)
+                                @foreach ($bookings as $groupId => $group)
+                                    @php
+                                        $firstBooking = $group->first();
+                                        $bookingIdDisplay = $firstBooking->booking_id ? $firstBooking->booking_id : 'RID-'.$firstBooking->id;
+                                    @endphp
                                     <tr>
-                                        <td>{{ date('d/m/Y', strtotime($booking->booking_date)) }}</td>
-                                        <td>{{ $booking->room->name ?? 'ไม่พบข้อมูลห้อง' }}</td>
-                                        <td>{{ $booking->start_time }} - {{ $booking->end_time }}</td>
+                                        <td>{{ $bookingIdDisplay }}</td>
+                                        <td>{{ $firstBooking->room->name ?? 'ไม่พบข้อมูลห้อง' }}</td>
                                         <td>
-                                            @if ($booking->status == 'pending')
+                                            @foreach($group as $item)
+                                                <div class="mb-1">
+                                                    {{ date('d/m/Y', strtotime($item->booking_date)) }} 
+                                                    <span class="text-muted">({{ \Carbon\Carbon::parse($item->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($item->end_time)->format('H:i') }})</span>
+                                                </div>
+                                            @endforeach
+                                        </td>
+                                        <td>
+                                            @if ($firstBooking->status == 'pending')
                                                 <span class="badge bg-warning text-dark">รออนุมัติ</span>
-                                            @elseif($booking->status == 'approved')
+                                            @elseif($firstBooking->status == 'approved')
                                                 <span class="badge bg-success">อนุมัติแล้ว</span>
-                                            @elseif($booking->status == 'rejected')
+                                            @elseif($firstBooking->status == 'rejected')
                                                 <span class="badge bg-danger">ปฏิเสธ</span>
-                                            @elseif($booking->status == 'canceled')
+                                            @elseif($firstBooking->status == 'canceled')
                                                 <span class="badge bg-secondary">ยกเลิกแล้ว</span>
                                             @endif
                                         </td>
 
                                         <td>
-                                            @if ($booking->status != 'canceled')
-                                                <form action="{{ route('booking_cancel', $booking->id) }}" method="POST"
+                                            @if ($firstBooking->status != 'canceled')
+                                                <form action="{{ route('booking_cancel', $firstBooking->id) }}" method="POST"
                                                     onsubmit="return confirm('ยืนยันการยกเลิกการจอง?');">
                                                     @csrf
                                                     @method('PATCH')

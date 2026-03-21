@@ -16,11 +16,11 @@ class BookingStatusMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public $booking;
+    public $bookingsGroup;
 
-    public function __construct($booking)
+    public function __construct($bookingsGroup)
     {
-        $this->booking = $booking;
+        $this->bookingsGroup = $bookingsGroup;
     }
 
     public function build()

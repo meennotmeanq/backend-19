@@ -56,6 +56,9 @@ Route::middleware(['auth', 'role:staff,admin'])->group(function () {
     Route::get('/booking/settings', [BookingController::class, 'settings'])->name('booking_settings');
     Route::post('/booking/settings', [BookingController::class, 'updateSettings'])->name('booking_settings_update');
 
+    Route::get('/admin/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('admin_dashboard');
+    Route::get('/admin/dashboard/export', [App\Http\Controllers\DashboardController::class, 'exportPdf'])->name('admin_dashboard_export');
+
     // Room Types
     Route::get('/admin/room-types', [RoomTypeController::class, 'index'])->name('room_types.index');
     Route::post('/admin/room-types', [RoomTypeController::class, 'store'])->name('room_types.store');

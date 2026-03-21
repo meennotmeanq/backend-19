@@ -2,16 +2,24 @@
 @section('title', 'Booking Status')
 
 @section('content')
+    @php
+       $firstBooking = $bookingsGroup->first();
+       $bookingIdDisplay = $firstBooking->booking_id ? $firstBooking->booking_id : 'RID-'.$firstBooking->id;
+    @endphp
     <h1>แจ้งผลการจองห้องเรียน</h1>
-    <p>เรียน คุณ {{ $booking->user->name }},</p>
-    <p>การจองห้อง <strong>{{ $booking->room->name }}</strong> ของคุณในวันที่
-        {{ \Carbon\Carbon::parse($booking->booking_date)->format('d/m/Y') }}</p>
+    <p>เรียน คุณ {{ $firstBooking->user->name }},</p>
+    <p>การจองห้อง <strong>{{ $firstBooking->room->name }}</strong> (รหัสการจอง: <strong>{{ $bookingIdDisplay }}</strong>) ของคุณได้รับการพิจารณาแล้ว โดยมีรายละเอียดดังนี้:</p>
+    <ul>
+        @foreach($bookingsGroup as $item)
+            <li>วันที่ {{ \Carbon\Carbon::parse($item->booking_date)->format('d/m/Y') }} เวลา {{ \Carbon\Carbon::parse($item->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($item->end_time)->format('H:i') }}</li>
+        @endforeach
+    </ul>
     <p>สถานะปัจจุบัน:
         <strong>
-            @if ($booking->status == 'approved')
-                อนุมัติแล้ว
-            @elseif($booking->status == 'rejected')
-                ปฏิเสธ
+            @if ($firstBooking->status == 'approved')
+                <span style="color: green;">อนุมัติแล้ว</span>
+            @elseif($firstBooking->status == 'rejected')
+                <span style="color: red;">ปฏิเสธ</span>
             @endif
         </strong>
     </p>

@@ -34,7 +34,7 @@ class BookingController extends Controller
                 'booking_dates' => 'required|array|min:1|max:3', // Max 3 days
                 'booking_dates.*' => array_filter(['nullable', 'date', 'after_or_equal:today', $limitRule]),
                 'time_slots' => 'required|array|min:1',
-                'time_slots.*' => 'in:slot1,slot2,slot3',
+                'time_slots.*' => ['required', 'regex:/^(slot[1-3]|slot_w_([1-9]|1[0-2]))$/'],
             ]);
 
             // Logic below is same as single: loop through dates and slots
@@ -47,7 +47,7 @@ class BookingController extends Controller
                 'booking_dates.*' => array_filter(['nullable', 'date', 'after_or_equal:today', $limitRule]),
                 // time_slots ต้องเป็น array หรือ string (ถ้าส่งมาค่าเดียว)
                 'time_slots' => 'required|array|min:1',
-                'time_slots.*' => 'in:slot1,slot2,slot3',
+                'time_slots.*' => ['required', 'regex:/^(slot[1-3]|slot_w_([1-9]|1[0-2]))$/'],
             ]);
         }
 
@@ -99,10 +99,13 @@ class BookingController extends Controller
         }
 
         // Create bookings
+        $bookingIdGroup = 'Book-ID: ' . strtoupper(\Illuminate\Support\Str::random(6));
+
         foreach ($dates as $date) {
             foreach ($slots as $slot) {
                 [$startTime, $endTime] = $this->mapTimeSlotToRange($slot);
                 Booking::create([
+                    'booking_id' => $bookingIdGroup,
                     'user_id' => $userId,
                     'room_id' => $validated['room_id'],
                     'booking_date' => $date, // Use loop variable
@@ -215,7 +218,10 @@ class BookingController extends Controller
         $bookings = Booking::where('user_id', auth()->user()->userid)
             ->with('room')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->groupBy(function ($booking) {
+                return $booking->booking_id ?: $booking->id;
+            });
 
         return view('history', compact('bookings'));
     }
@@ -226,7 +232,11 @@ class BookingController extends Controller
             ->where('user_id', auth()->user()->userid)
             ->firstOrFail();
 
-        $booking->update(['status' => 'canceled']);
+        if ($booking->booking_id) {
+            Booking::where('booking_id', $booking->booking_id)->update(['status' => 'canceled']);
+        } else {
+            $booking->update(['status' => 'canceled']);
+        }
 
         return back()->with('success', 'ยกเลิกการจองเรียบร้อยแล้ว');
     }
@@ -235,7 +245,10 @@ class BookingController extends Controller
     {
         $bookings = Booking::with(['room', 'user'])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->groupBy(function ($booking) {
+                return $booking->booking_id ?: $booking->id;
+            });
         return view('admin_manage_bookings', compact('bookings'));
     }
 
@@ -244,15 +257,21 @@ class BookingController extends Controller
         // 1. ค้นหาข้อมูลการจองพร้อมดึงข้อมูล User และ Room มาด้วย
         $booking = Booking::with(['user', 'room'])->findOrFail($id);
 
-        // 2. อัปเดตสถานะในฐานข้อมูล (approved, rejected, canceled)
-        $booking->update([
-            'status' => $request->status
-        ]);
+        // 2. อัปเดตสถานะในฐานข้อมูล (approved, rejected, canceled) สำหรับทุกรายการในกลุ่ม
+        if ($booking->booking_id) {
+            Booking::where('booking_id', $booking->booking_id)->update(['status' => $request->status]);
+        } else {
+            $booking->update(['status' => $request->status]);
+        }
+
+        // รีเฟรชสถานะใหม่ให้ชัวร์
+        $booking->refresh();
 
         // 3. ส่งอีเมลแจ้งเตือนไปยังผู้จองทันที
         // ตรวจสอบว่าผู้จองมีอีเมลจริงก่อนส่ง เพื่อป้องกัน Error
         if ($booking->user && $booking->user->email) {
-            Mail::to($booking->user->email)->send(new BookingStatusMail($booking));
+            $bookingsGroup = $booking->booking_id ? Booking::with('room')->where('booking_id', $booking->booking_id)->get() : collect([$booking]);
+            Mail::to($booking->user->email)->send(new BookingStatusMail($bookingsGroup));
         }
 
         return back()->with('success', 'อัปเดตสถานะและส่งอีเมลแจ้งเตือนเรียบร้อยแล้ว');
@@ -273,6 +292,18 @@ class BookingController extends Controller
             case 'slot3':
                 // 18:30-20:00
                 return ['18:30:00', '20:00:00'];
+            case 'slot_w_1': return ['08:20:00', '09:10:00'];
+            case 'slot_w_2': return ['09:10:00', '10:00:00'];
+            case 'slot_w_3': return ['10:00:00', '10:50:00'];
+            case 'slot_w_4': return ['10:50:00', '11:40:00'];
+            case 'slot_w_5': return ['11:40:00', '12:30:00'];
+            case 'slot_w_6': return ['12:30:00', '13:20:00'];
+            case 'slot_w_7': return ['13:20:00', '14:10:00'];
+            case 'slot_w_8': return ['14:10:00', '15:00:00'];
+            case 'slot_w_9': return ['15:00:00', '15:50:00'];
+            case 'slot_w_10': return ['15:50:00', '16:40:00'];
+            case 'slot_w_11': return ['16:40:00', '17:30:00'];
+            case 'slot_w_12': return ['17:30:00', '18:20:00'];
             default:
                 // กันกรณีผิดพลาด
                 return ['00:00:00', '00:00:00'];
@@ -281,7 +312,11 @@ class BookingController extends Controller
     public function updateUsage(Request $request, $id)
     {
         $booking = Booking::findOrFail($id);
-        $booking->update(['is_used' => $request->is_used]);
+        if ($booking->booking_id) {
+            Booking::where('booking_id', $booking->booking_id)->update(['is_used' => $request->is_used]);
+        } else {
+            $booking->update(['is_used' => $request->is_used]);
+        }
         return back()->with('success', 'อัปเดตสถานะการเข้าใช้งานเรียบร้อยแล้ว');
     }
 }
