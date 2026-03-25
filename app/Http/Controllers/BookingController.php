@@ -98,7 +98,7 @@ class BookingController extends Controller
             return back()->withErrors(['time_slots' => 'รายการต่อไปนี้ไม่ว่าง: ' . implode(', ', $conflicts)])->withInput();
         }
 
-        // Create bookings
+        // Create bookings ทำการ random bookingID 6 หลัก
         $bookingIdGroup = 'Book-ID: ' . strtoupper(\Illuminate\Support\Str::random(6));
 
         foreach ($dates as $date) {
@@ -292,18 +292,30 @@ class BookingController extends Controller
             case 'slot3':
                 // 18:30-20:00
                 return ['18:30:00', '20:00:00'];
-            case 'slot_w_1': return ['08:20:00', '09:10:00'];
-            case 'slot_w_2': return ['09:10:00', '10:00:00'];
-            case 'slot_w_3': return ['10:00:00', '10:50:00'];
-            case 'slot_w_4': return ['10:50:00', '11:40:00'];
-            case 'slot_w_5': return ['11:40:00', '12:30:00'];
-            case 'slot_w_6': return ['12:30:00', '13:20:00'];
-            case 'slot_w_7': return ['13:20:00', '14:10:00'];
-            case 'slot_w_8': return ['14:10:00', '15:00:00'];
-            case 'slot_w_9': return ['15:00:00', '15:50:00'];
-            case 'slot_w_10': return ['15:50:00', '16:40:00'];
-            case 'slot_w_11': return ['16:40:00', '17:30:00'];
-            case 'slot_w_12': return ['17:30:00', '18:20:00'];
+            case 'slot_w_1':
+                return ['08:20:00', '09:10:00'];
+            case 'slot_w_2':
+                return ['09:10:00', '10:00:00'];
+            case 'slot_w_3':
+                return ['10:00:00', '10:50:00'];
+            case 'slot_w_4':
+                return ['10:50:00', '11:40:00'];
+            case 'slot_w_5':
+                return ['11:40:00', '12:30:00'];
+            case 'slot_w_6':
+                return ['12:30:00', '13:20:00'];
+            case 'slot_w_7':
+                return ['13:20:00', '14:10:00'];
+            case 'slot_w_8':
+                return ['14:10:00', '15:00:00'];
+            case 'slot_w_9':
+                return ['15:00:00', '15:50:00'];
+            case 'slot_w_10':
+                return ['15:50:00', '16:40:00'];
+            case 'slot_w_11':
+                return ['16:40:00', '17:30:00'];
+            case 'slot_w_12':
+                return ['17:30:00', '18:20:00'];
             default:
                 // กันกรณีผิดพลาด
                 return ['00:00:00', '00:00:00'];
